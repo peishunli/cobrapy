@@ -9,7 +9,7 @@ from builtins import object, super
 from warnings import warn
 
 from numpy import zeros, asarray, nan
-from pandas import Series
+from pandas import Series, DataFrame
 
 from cobra.util.solver import check_solver_status
 
@@ -168,6 +168,11 @@ class Solution(object):
         warn("use solution.reduced_costs.values() instead", DeprecationWarning)
         return self.reduced_costs.values
 
+    @property
+    def data_frame(self):
+        return DataFrame({'fluxes': self.fluxes,
+                          'reduced_costs': self.reduced_costs})
+
 
 class LegacySolution(object):
     """
@@ -293,7 +298,7 @@ def get_solution(model, reactions=None, metabolites=None):
     reduced = zeros(len(reactions))
     try:
         var_duals = model.solver.reduced_costs
-    except Exception: #CplexSolverError
+    except Exception:  # CplexSolverError
         var_duals = Series([None] * len(reactions), index=rxn_index)
     # reduced costs are not always defined, e.g. for integer problems
     if var_duals[rxn_index[0]] is None:
@@ -309,7 +314,7 @@ def get_solution(model, reactions=None, metabolites=None):
     met_index = [met.id for met in metabolites]
     try:
         constr_duals = model.solver.shadow_prices
-    except Exception: #CplexSolverError
+    except Exception:  # CplexSolverError
         constr_duals = Series([nan] * len(metabolites), index=met_index)
     shadow = asarray([constr_duals[met.id] for met in metabolites])
     return Solution(model.solver.objective.value, model.solver.status,
