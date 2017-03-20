@@ -291,7 +291,10 @@ def get_solution(model, reactions=None, metabolites=None):
     fluxes = zeros(len(reactions))
     var_primals = model.solver.primal_values
     reduced = zeros(len(reactions))
-    var_duals = model.solver.reduced_costs
+    try:
+        var_duals = model.solver.reduced_costs
+    except Exception: #CplexSolverError
+        var_duals = Series([None] * len(reactions), index=rxn_index)
     # reduced costs are not always defined, e.g. for integer problems
     if var_duals[rxn_index[0]] is None:
         reduced.fill(nan)
@@ -304,7 +307,10 @@ def get_solution(model, reactions=None, metabolites=None):
             fluxes[i] = var_primals[forward] - var_primals[reverse]
             reduced[i] = var_duals[forward] - var_duals[reverse]
     met_index = [met.id for met in metabolites]
-    constr_duals = model.solver.shadow_prices
+    try:
+        constr_duals = model.solver.shadow_prices
+    except Exception: #CplexSolverError
+        constr_duals = Series([nan] * len(metabolites), index=met_index)
     shadow = asarray([constr_duals[met.id] for met in metabolites])
     return Solution(model.solver.objective.value, model.solver.status,
                     reactions,
