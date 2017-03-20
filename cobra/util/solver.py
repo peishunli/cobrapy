@@ -378,8 +378,10 @@ def fix_objective_as_constraint(model, fraction=1, name='fixed_objective_{}'):
     fix_objective_name = name.format(model.objective.name)
     if fix_objective_name in model.constraints:
         model.solver.remove(fix_objective_name)
-    solution = model.optimize()
-    objective_bound = solution.objective_value * fraction
+    model.solver.optimize()
+    if model.solver.status != 'optimal':
+        raise OptimizationError('failed to fix objective')
+    objective_bound = model.solver.objective.value * fraction
     if model.objective.direction == 'max':
         ub, lb = None, objective_bound
     else:
